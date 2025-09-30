@@ -1,0 +1,71 @@
+services:
+  nginx:
+    env_file:
+      - .env
+    image: policy-insight-nginx
+    container_name: policy-insight-nginx
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    expose:
+      - 443
+    ports:
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  backend:
+    env_file:
+      - .env
+    image: policy-insight-backend
+    container_name: policy-insight-backend
+    build:
+      context: ./requirements/backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./requirements/backend/app:/code/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}
+    depends_on:
+      - postgresql
+    networks:
+      - app_network
+    restart: unless-stopped
+    # 헬스체크 추가
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  postgresql:
+    env_file:
+      - .env
+    image: policy-insight-postgresql
+    container_name: policy-insight-postgresql
+    build:
+      context: ./requirements/postgres
+      dockerfile: Dockerfile
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: policy-insight-postgres-data
+
+networks:
+  app_network:
+    name: policy-insight-network
+    driver: bridge
