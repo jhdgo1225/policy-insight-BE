@@ -1,4 +1,4 @@
-.PHONY: build up down logs clean-all clean-volumes clean-images
+.PHONY: build up down logs clean-all clean-volumes clean-images re
 
 build:
 	docker-compose -f src/docker-compose.yml build
@@ -24,3 +24,8 @@ clean-images:
 clean-all:
 	docker-compose -f src/docker-compose.yml down -v
 	docker rmi policy-insight-nginx policy-insight-backend policy-insight-postgresql
+
+re:
+	@make clean-all
+	@make build
+	@make up

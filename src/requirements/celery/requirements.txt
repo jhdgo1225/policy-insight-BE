@@ -1,0 +1,9 @@
+celery
+flower
+redis
+sqlalchemy
+psycopg2-binary
+python-dotenv
+sqlalchemy-utils
+pytz
+tzlocal

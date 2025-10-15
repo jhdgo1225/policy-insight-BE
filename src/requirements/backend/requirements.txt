@@ -5,3 +5,8 @@ uvicorn
 sqlalchemy
 python-dotenv
 psycopg2-binary
+celery
+flower
+sqlalchemy-utils
+pytz
+tzlocal
