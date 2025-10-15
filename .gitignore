@@ -1,2 +1,10 @@
+.DS_Store
 .env
 **/.env
+**/__pycache__
+*.pyc
+*$py.class
+src/requirements/backend/app/__pycache__
+src/requirements/backend/app/*/__pycache__
+**/*.pyc
+**/__pycache__/
