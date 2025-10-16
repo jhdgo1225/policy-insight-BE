@@ -87,11 +87,13 @@ services:
   celery:
     env_file:
       - .env
-    image: policy-insight-celery
+    image: policy-insight-celery-worker
     container_name: policy-insight-celery
     build:
       context: ./requirements/celery
       dockerfile: Dockerfile
+      args:
+        SERVICE_TYPE: worker
     volumes:
       - ./requirements/celery:/code
     depends_on:
@@ -104,15 +106,18 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+    command: ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
 
   celery-beat:
     env_file:
       - .env
-    image: policy-insight-celery
+    image: policy-insight-celery-beat
     container_name: policy-insight-celery-beat
     build:
       context: ./requirements/celery
       dockerfile: Dockerfile
+      args:
+        SERVICE_TYPE: beat
     volumes:
       - ./requirements/celery:/code
     depends_on:
@@ -122,6 +127,7 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+    command: ["celery", "-A", "celery_app", "beat", "--loglevel=info"]
 
 volumes:
   postgres_data:

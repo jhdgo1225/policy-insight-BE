@@ -8,3 +8,4 @@ src/requirements/backend/app/__pycache__
 src/requirements/backend/app/*/__pycache__
 **/*.pyc
 **/__pycache__/
+**/*.csv
