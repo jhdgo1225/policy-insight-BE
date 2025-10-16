@@ -7,3 +7,6 @@ python-dotenv
 sqlalchemy-utils
 pytz
 tzlocal
+requests
+beautifulsoup4
+playwright
