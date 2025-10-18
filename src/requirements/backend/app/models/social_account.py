@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, CHAR, Boolean, BigInteger
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import BIGSERIAL
 
 from app.db.base import Base
 
@@ -9,7 +8,7 @@ from app.db.base import Base
 class SocialAccount(Base):
     __tablename__ = "social_account"
 
-    social_id = Column(BigInteger, primary_key=True, index=True, server_default=func.nextval('social_account_social_id_seq'), doc="소셜 연동의 고유 식별번호")
+    social_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True, doc="소셜 연동의 고유 식별번호")
     member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False, doc="연동된 회원 번호")
     social_platform = Column(String(50), nullable=False, doc="소셜 플랫폼명")  # G: Google, K: Kakao, N: Naver
     social_account_id = Column(String(200), nullable=False, doc="소셜 플랫폼의 계정 ID")

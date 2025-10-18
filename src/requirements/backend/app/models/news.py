@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, Text, TIMESTAMP, BigInteger, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import BIGSERIAL
 
 from app.db.base import Base
 
@@ -9,7 +8,7 @@ from app.db.base import Base
 class News(Base):
     __tablename__ = "news"
 
-    news_id = Column(BigInteger, primary_key=True, index=True, server_default=func.nextval('news_news_id_seq'), doc="뉴스의 고유 식별번호")
+    news_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True, doc="뉴스의 고유 식별번호")
     news_title = Column(String(500), nullable=False, doc="뉴스 제목")
     body = Column(Text, nullable=False, doc="뉴스 본문 내용")
     summary = Column(Text, nullable=True, doc="뉴스 요약 내용")

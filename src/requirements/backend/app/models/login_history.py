@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, BigInteger
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import BIGSERIAL
 
 from app.db.base import Base
 
@@ -9,7 +8,7 @@ from app.db.base import Base
 class LoginHistory(Base):
     __tablename__ = "login_history"
 
-    history_id = Column(BigInteger, primary_key=True, index=True, server_default=func.nextval('login_history_history_id_seq'), doc="로그인 기록의 고유 식별번호")
+    history_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True, doc="로그인 기록의 고유 식별번호")
     member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False, doc="로그인한 회원 번호")
     login_date = Column(TIMESTAMP, nullable=False, server_default=func.now(), doc="로그인 일시")
     logout_date = Column(TIMESTAMP, nullable=True, doc="로그아웃 일시")

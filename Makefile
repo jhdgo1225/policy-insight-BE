@@ -18,7 +18,8 @@ clean-volumes:
 
 # 특정 프로젝트의 이미지만 삭제
 clean-images:
-	@docker rmi policy-insight-nginx policy-insight-backend policy-insight-postgresql policy-insight-celery-worker policy-insight-celery-beat
+	@docker rmi policy-insight-nginx policy-insight-backend policy-insight-postgresql
+# 	@docker rmi policy-insight-nginx policy-insight-backend policy-insight-postgresql policy-insight-celery-worker policy-insight-celery-beat
 
 # 컨테이너, 네트워크, 볼륨, 이미지 모두 삭제 (주의: 모든 중지된 컨테이너와 미사용 이미지가 삭제됨)
 clean-all:

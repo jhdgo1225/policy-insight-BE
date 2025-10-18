@@ -1,7 +1,6 @@
 from sqlalchemy import Column, BigInteger, String, TIMESTAMP, Text, CHAR, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import BIGSERIAL
 
 from app.db.base import Base
 
@@ -9,7 +8,7 @@ from app.db.base import Base
 class Member(Base):
     __tablename__ = "member"
 
-    member_id = Column(BigInteger, primary_key=True, index=True, server_default=func.nextval('member_member_id_seq'), doc="회원 고유 식별번호")
+    member_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True, doc="회원 고유 식별번호")
     email = Column(String(100), unique=True, nullable=False, doc="회원의 이메일 주소")
     passwd = Column(String(64), nullable=True, doc="암호화된 패스워드")
     member_name = Column(String(50), nullable=False, doc="회원의 실명")

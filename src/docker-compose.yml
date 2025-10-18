@@ -32,8 +32,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
@@ -64,78 +64,78 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: policy-insight-rabbitmq
-    env_file:
-      - .env
-    ports:
-      - "5672:5672" # AMQP protocol port
-      - "15672:15672" # Management UI port
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-      - ./requirements/rabbitmq/conf/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-    networks:
-      - app_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: policy-insight-rabbitmq
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "5672:5672" # AMQP protocol port
+  #     - "15672:15672" # Management UI port
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
+  #     - ./requirements/rabbitmq/conf/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+  #   networks:
+  #     - app_network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmqctl", "status"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-  celery:
-    env_file:
-      - .env
-    image: policy-insight-celery-worker
-    container_name: policy-insight-celery
-    build:
-      context: ./requirements/celery
-      dockerfile: Dockerfile
-      args:
-        SERVICE_TYPE: worker
-    volumes:
-      - ./requirements/celery:/code
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-    networks:
-      - app_network
-    restart: unless-stopped
-    command: ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
+  # celery:
+  #   env_file:
+  #     - .env
+  #   image: policy-insight-celery-worker
+  #   container_name: policy-insight-celery
+  #   build:
+  #     context: ./requirements/celery
+  #     dockerfile: Dockerfile
+  #     args:
+  #       SERVICE_TYPE: worker
+  #   volumes:
+  #     - ./requirements/celery:/code
+  #   depends_on:
+  #     postgresql:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     backend:
+  #       condition: service_healthy
+  #   networks:
+  #     - app_network
+  #   restart: unless-stopped
+  #   command: ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
 
-  celery-beat:
-    env_file:
-      - .env
-    image: policy-insight-celery-beat
-    container_name: policy-insight-celery-beat
-    build:
-      context: ./requirements/celery
-      dockerfile: Dockerfile
-      args:
-        SERVICE_TYPE: beat
-    volumes:
-      - ./requirements/celery:/code
-    depends_on:
-      - rabbitmq
-      - postgresql
-      - celery
-    networks:
-      - app_network
-    restart: unless-stopped
-    command: ["celery", "-A", "celery_app", "beat", "--loglevel=info"]
+  # celery-beat:
+  #   env_file:
+  #     - .env
+  #   image: policy-insight-celery-beat
+  #   container_name: policy-insight-celery-beat
+  #   build:
+  #     context: ./requirements/celery
+  #     dockerfile: Dockerfile
+  #     args:
+  #       SERVICE_TYPE: beat
+  #   volumes:
+  #     - ./requirements/celery:/code
+  #   depends_on:
+  #     - rabbitmq
+  #     - postgresql
+  #     - celery
+  #   networks:
+  #     - app_network
+  #   restart: unless-stopped
+  #   command: ["celery", "-A", "celery_app", "beat", "--loglevel=info"]
 
 volumes:
   postgres_data:
     name: policy-insight-postgres-data
-  rabbitmq_data:
-    name: policy-insight-rabbitmq-data
-  celerybeat_data:
-    name: policy-insight-celerybeat-data
+  # rabbitmq_data:
+  #   name: policy-insight-rabbitmq-data
+  # celerybeat_data:
+  #   name: policy-insight-celerybeat-data
 
 networks:
   app_network:

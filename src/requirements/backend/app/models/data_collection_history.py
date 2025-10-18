@@ -1,7 +1,6 @@
 from sqlalchemy import Column, CHAR, TIMESTAMP, Integer, Boolean, Text, BigInteger, CheckConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import BIGSERIAL
 
 from app.db.base import Base
 
@@ -9,7 +8,7 @@ from app.db.base import Base
 class DataCollectionHistory(Base):
     __tablename__ = "data_collection_history"
 
-    collection_id = Column(BigInteger, primary_key=True, index=True, server_default=func.nextval('data_collection_history_collection_id_seq'), doc="수집 작업의 고유 식별번호")
+    collection_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True, doc="수집 작업의 고유 식별번호")
     data_type = Column(CHAR(1), nullable=False, doc="수집한 데이터 유형")
     start_date = Column(TIMESTAMP, nullable=False, doc="작업 시작 일시")
     end_date = Column(TIMESTAMP, nullable=True, doc="작업 종료 일시")
