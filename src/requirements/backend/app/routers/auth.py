@@ -5,12 +5,13 @@ from app.db.base import get_db
 from app.schemas.auth import (
     LoginRequest, LoginResponse, 
     LogoutResponse, SignupRequest, SignupResponse,
-    RefreshTokenResponse, ResetPasswordNoLoginRequest,
+    RefreshTokenRequest, RefreshTokenResponse, ResetPasswordNoLoginRequest,
     ResetPasswordLoginRequest, PasswordChangeResponse,
     PasswordHistoryItem, FindIdRequest, FindIdResponse,
     ErrorResponse
 )
 from app.services import auth as auth_service
+from app.core.dependencies import get_token_from_credentials
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -66,7 +67,7 @@ async def login(
 	}
 )
 async def logout(
-	authorization: str = Header(..., description="Bearer {access_token}"),
+	token: str = Depends(get_token_from_credentials),
 	db: Session = Depends(get_db)
 ):
 	"""
@@ -74,13 +75,13 @@ async def logout(
 	
 	액세스 토큰을 검증하고 사용자의 토큰을 무효화합니다.
 	
-	- **Authorization Header**: Bearer {access_token} 형식
+	- **Authorization Header**: Swagger UI의 Authorize 버튼을 통해 액세스 토큰 입력
 	
 	Returns:
 		LogoutResponse: 로그아웃 성공 메시지
 	"""
 	try:
-		return auth_service.logout_user(db, authorization)
+		return auth_service.logout_user(db, token)
 	except HTTPException:
 		raise
 	except Exception as e:
@@ -135,7 +136,7 @@ async def signup(
 	}
 )
 async def create_refresh(
-	authorization: str = Header(..., description="Bearer {refresh_token}"),
+	refresh_data: RefreshTokenRequest,
 	db: Session = Depends(get_db)
 ):
 	"""
@@ -143,13 +144,16 @@ async def create_refresh(
 	
 	리프레시 토큰을 검증하고 새로운 액세스 토큰을 발급합니다.
 	
-	- **Authorization Header**: Bearer {refresh_token} 형식
+	Request Body:
+	- **refreshToken**: 리프레시 토큰 (Bearer 접두사 없이 토큰만 입력)
 	
 	Returns:
 		RefreshTokenResponse: 새로 발급된 액세스 토큰
 	"""
 	try:
-		return auth_service.refresh_access_token(db, authorization)
+		# Bearer 접두사를 추가하여 서비스 레이어로 전달
+		token_with_bearer = f"Bearer {refresh_data.refreshToken}"
+		return auth_service.refresh_access_token(db, token_with_bearer)
 	except HTTPException:
 		raise
 	except Exception as e:
@@ -203,7 +207,7 @@ async def reset_password_nologin(
 )
 async def reset_password_login(
 	reset_data: ResetPasswordLoginRequest,
-	authorization: str = Header(..., description="Bearer {access_token}"),
+	token: str = Depends(get_token_from_credentials),
 	db: Session = Depends(get_db)
 ):
 	"""
@@ -211,14 +215,14 @@ async def reset_password_login(
 	
 	액세스 토큰을 검증하고 새 비밀번호로 변경합니다.
 	
-	- **Authorization Header**: Bearer {access_token} 형식
+	- **Authorization Header**: Swagger UI의 Authorize 버튼을 통해 액세스 토큰 입력
 	- **password**: 새 비밀번호 (10-20자, 영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
 	
 	Returns:
 		List[PasswordHistoryItem]: 비밀번호 변경 이력 목록
 	"""
 	try:
-		return auth_service.reset_password_login(db, reset_data, authorization)
+		return auth_service.reset_password_login(db, reset_data, token)
 	except HTTPException:
 		raise
 	except Exception as e:

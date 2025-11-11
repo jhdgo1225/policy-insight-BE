@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.base import get_db
 from app.schemas.user import (
@@ -7,6 +7,7 @@ from app.schemas.user import (
     ErrorResponse
 )
 from app.services import user as user_service
+from app.core.dependencies import get_token_from_credentials
 
 router = APIRouter(prefix="/api/v1/user", tags=["user"])
 
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/api/v1/user", tags=["user"])
     }
 )
 async def read_user_info(
-    authorization: str = Header(..., description="Bearer {access_token}"),
+    token: str = Depends(get_token_from_credentials),
     db: Session = Depends(get_db)
 ):
     """
@@ -34,7 +35,7 @@ async def read_user_info(
         UserInfoResponse: 사용자 정보 (id, email, name, image, phone)
     """
     try:
-        return user_service.get_user_info(db, authorization)
+        return user_service.get_user_info(db, token)
     except HTTPException:
         raise
     except Exception as e:
@@ -54,7 +55,7 @@ async def read_user_info(
 )
 async def update_user_info(
     update_data: UpdateUserRequest,
-    authorization: str = Header(..., description="Bearer {access_token}"),
+    token: str = Depends(get_token_from_credentials),
     db: Session = Depends(get_db)
 ):
     """
@@ -70,7 +71,7 @@ async def update_user_info(
         UpdateUserResponse: 수정된 사용자 정보 (image, phone)
     """
     try:
-        return user_service.update_user_info(db, update_data, authorization)
+        return user_service.update_user_info(db, update_data, token)
     except HTTPException:
         raise
     except Exception as e:
@@ -81,7 +82,6 @@ async def update_user_info(
 
 @router.delete(
     '/me',
-    response_model=DeleteUserResponse,
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         401: {"model": ErrorResponse, "description": "Unauthorized"},
@@ -89,7 +89,7 @@ async def update_user_info(
     }
 )
 async def delete_user_info(
-    authorization: str = Header(..., description="Bearer {access_token}"),
+    token: str = Depends(get_token_from_credentials),
     db: Session = Depends(get_db)
 ):
     """
@@ -101,10 +101,11 @@ async def delete_user_info(
     - **Authorization Header**: Bearer {access_token} 형식
     
     Returns:
-        DeleteUserResponse: 탈퇴 성공 메시지
+        None: 204 No Content (응답 본문 없음)
     """
     try:
-        return user_service.delete_user(db, authorization)
+        user_service.delete_user(db, token)
+        return None
     except HTTPException:
         raise
     except Exception as e:

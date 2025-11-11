@@ -114,6 +114,27 @@ def invalidate_tokens(db: Session, member_id: int) -> bool:
     return False
 
 
+def increment_token_version(db: Session, member_id: int) -> Member:
+    """
+    회원의 토큰 버전을 증가시킵니다.
+    리프레시 토큰으로 새 액세스 토큰을 발급할 때 호출하여
+    기존의 모든 액세스 토큰을 무효화합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        member_id: 회원 ID
+        
+    Returns:
+        업데이트된 회원 객체
+    """
+    member = db.query(Member).filter(Member.member_id == member_id).first()
+    if member:
+        member.token_version = (member.token_version or 1) + 1
+        db.commit()
+        db.refresh(member)
+    return member
+
+
 def create_login_history(
     db: Session,
     member_id: int,

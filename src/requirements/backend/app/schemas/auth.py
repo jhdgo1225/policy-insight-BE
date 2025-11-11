@@ -55,6 +55,11 @@ class SignupResponse(BaseModel):
     message: str = Field(..., description="성공 메시지")
 
 
+class RefreshTokenRequest(BaseModel):
+    """리프레시 토큰 요청 스키마"""
+    refreshToken: str = Field(..., description="리프레시 토큰")
+
+
 class RefreshTokenResponse(BaseModel):
     """리프레시 토큰 응답 스키마"""
     accessToken: str = Field(..., description="새로 발급된 액세스 토큰")
