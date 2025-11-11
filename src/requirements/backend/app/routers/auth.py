@@ -259,15 +259,3 @@ async def find_id(
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail="Server error"
 		)
-
-@router.get('/me')
-async def read_user_info(db: Session = Depends(get_db)):
-	pass
-
-@router.put('/me')
-async def update_user_info(db: Session = Depends(get_db)):
-	pass
-
-@router.delete('/me')
-async def delete_user_info(db: Session = Depends(get_db)):
-	pass
