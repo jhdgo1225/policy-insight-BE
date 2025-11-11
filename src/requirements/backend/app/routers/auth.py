@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from sqlalchemy.orm import Session
+from typing import List
 from app.db.base import get_db
 from app.schemas.auth import (
     LoginRequest, LoginResponse, 
     LogoutResponse, SignupRequest, SignupResponse,
-    RefreshTokenResponse, ErrorResponse
+    RefreshTokenResponse, ResetPasswordNoLoginRequest,
+    ResetPasswordLoginRequest, PasswordChangeResponse,
+    PasswordHistoryItem, ErrorResponse
 )
 from app.services import auth as auth_service
 
@@ -154,16 +157,77 @@ async def create_refresh(
 			detail="Server error"
 		)
 
-@router.put('/password/nologin')
-async def reset_password_nologin(db: Session = Depends(get_db)):
-	pass
+@router.put(
+	'/password/nologin',
+	response_model=PasswordChangeResponse,
+	status_code=status.HTTP_200_OK,
+	responses={
+		401: {"model": ErrorResponse, "description": "Unauthorized"},
+		500: {"model": ErrorResponse, "description": "Internal server error"}
+	}
+)
+async def reset_password_nologin(
+	reset_data: ResetPasswordNoLoginRequest,
+	db: Session = Depends(get_db)
+):
+	"""
+	비로그인 상태에서 비밀번호 변경 API
+	
+	이메일(ID)과 새 비밀번호를 통해 비밀번호를 변경합니다.
+	
+	- **id**: 회원의 이메일 주소 (ID)
+	- **password**: 새 비밀번호 (10-20자, 영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
+	
+	Returns:
+		PasswordChangeResponse: 비밀번호 변경 성공 메시지
+	"""
+	try:
+		return auth_service.reset_password_nologin(db, reset_data)
+	except HTTPException:
+		raise
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
+
+@router.put(
+	'/password/login',
+	response_model=List[PasswordHistoryItem],
+	status_code=status.HTTP_200_OK,
+	responses={
+		401: {"model": ErrorResponse, "description": "Unauthorized"},
+		500: {"model": ErrorResponse, "description": "Internal server error"}
+	}
+)
+async def reset_password_login(
+	reset_data: ResetPasswordLoginRequest,
+	authorization: str = Header(..., description="Bearer {access_token}"),
+	db: Session = Depends(get_db)
+):
+	"""
+	로그인 상태에서 비밀번호 변경 API
+	
+	액세스 토큰을 검증하고 새 비밀번호로 변경합니다.
+	
+	- **Authorization Header**: Bearer {access_token} 형식
+	- **password**: 새 비밀번호 (10-20자, 영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
+	
+	Returns:
+		List[PasswordHistoryItem]: 비밀번호 변경 이력 목록
+	"""
+	try:
+		return auth_service.reset_password_login(db, reset_data, authorization)
+	except HTTPException:
+		raise
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
 
 @router.post('/id')
 async def find_id(db: Session = Depends(get_db)):
-	pass
-
-@router.put('/password/login')
-async def reset_password_login(db: Session = Depends(get_db)):
 	pass
 
 @router.get('/me')
