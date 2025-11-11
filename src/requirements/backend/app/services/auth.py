@@ -164,8 +164,12 @@ def login_user(
             detail="Invalid authorize"
         )
     
-    # 6. 토큰 생성
-    token_data = {"sub": str(member.member_id), "email": member.email}
+    # 6. 토큰 생성 (token_version 포함)
+    token_data = {
+        "sub": str(member.member_id), 
+        "email": member.email,
+        "token_version": member.token_version or 1
+    }
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
     
@@ -240,7 +244,15 @@ def logout_user(db: Session, authorization: str) -> LogoutResponse:
             detail="Invalid authorize"
         )
     
-    # 5. 계정 상태 확인
+    # 5. 토큰 버전 확인
+    token_version = payload.get("token_version")
+    if token_version != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 계정 상태 확인
     if member.account_status != 'A':
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -394,11 +406,18 @@ def refresh_access_token(db: Session, authorization: str) -> RefreshTokenRespons
             detail="Invalid authorize"
         )
     
-    # 7. 새로운 액세스 토큰 생성
-    token_data = {"sub": str(member.member_id), "email": member.email}
+    # 7. 토큰 버전 증가 (기존 액세스 토큰 무효화)
+    updated_member = auth_crud.increment_token_version(db, member.member_id)
+    
+    # 8. 새로운 액세스 토큰 생성 (새로운 token_version 포함)
+    token_data = {
+        "sub": str(member.member_id), 
+        "email": member.email,
+        "token_version": updated_member.token_version
+    }
     new_access_token = create_access_token(token_data)
     
-    # 8. 성공 응답 반환
+    # 9. 성공 응답 반환
     return RefreshTokenResponse(accessToken=new_access_token)
 
 
@@ -508,31 +527,39 @@ def reset_password_login(
             detail="Invalid authorize"
         )
     
-    # 5. 계정 상태 확인
+    # 5. 토큰 버전 확인
+    token_version = payload.get("token_version")
+    if token_version != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 계정 상태 확인
     if member.account_status != 'A':
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorize"
         )
     
-    # 6. 비밀번호 형식 검증
+    # 7. 비밀번호 형식 검증
     if not validate_password_format(reset_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorize"
         )
     
-    # 7. 비밀번호 해싱
+    # 8. 비밀번호 해싱
     hashed_password = hash_password(reset_data.password)
     
-    # 8. 비밀번호 업데이트
+    # 9. 비밀번호 업데이트
     if not auth_crud.update_password(db, member.member_id, hashed_password):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server error"
         )
     
-    # 9. 비밀번호 변경 이력 반환 (현재 변경 내역)
+    # 10. 비밀번호 변경 이력 반환 (현재 변경 내역)
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     history = [
         PasswordHistoryItem(

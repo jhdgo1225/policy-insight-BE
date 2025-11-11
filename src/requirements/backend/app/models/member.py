@@ -16,6 +16,7 @@ class Member(Base):
     profile_image = Column(String(500), nullable=False, doc="프로필 이미지 경로")
     join_date = Column(TIMESTAMP, nullable=False, server_default=func.now(), doc="회원 가입 일시")
     refresh_token = Column(Text, nullable=True, doc="리프레시 토큰 정보")
+    token_version = Column(BigInteger, nullable=False, server_default='1', doc="토큰 버전 (리프레시 시 증가)")
     last_login = Column(TIMESTAMP, nullable=True, doc="최종 로그인 일시")
     account_status = Column(CHAR(1), nullable=False, server_default='A', doc="계정의 현재 상태")  # A:활성, S:정지, W:탈퇴
     withdrawal_date = Column(TIMESTAMP, nullable=True, doc="회원 탈퇴 일시")

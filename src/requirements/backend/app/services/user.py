@@ -66,7 +66,15 @@ def get_user_info(db: Session, authorization: str) -> UserInfoResponse:
             detail="Invalid authorize"
         )
     
-    # 5. 응답 데이터 생성
+    # 5. 토큰 버전 확인 (리프레시 후 기존 액세스 토큰 무효화)
+    token_version = payload.get("token_version")
+    if token_version != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 응답 데이터 생성
     return UserInfoResponse(
         id=member.member_id,
         email=member.email,
@@ -125,19 +133,27 @@ def update_user_info(
             detail="Invalid authorize"
         )
     
-    # 5. 전화번호 형식 검증 (제공된 경우)
+    # 5. 토큰 버전 확인
+    token_version = payload.get("token_version")
+    if token_version != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 전화번호 형식 검증 (제공된 경우)
     if update_data.phone is not None and not validate_phone_format(update_data.phone):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorize"
         )
     
-    # 6. 전화번호 정규화 (제공된 경우)
+    # 7. 전화번호 정규화 (제공된 경우)
     phone_normalized = None
     if update_data.phone is not None:
         phone_normalized = re.sub(r'[-\s]', '', update_data.phone)
     
-    # 7. 회원 정보 업데이트
+    # 8. 회원 정보 업데이트
     updated_member = user_crud.update_member_info(
         db=db,
         member_id=member_id,
@@ -202,7 +218,15 @@ def delete_user(db: Session, authorization: str) -> DeleteUserResponse:
             detail="Invalid authorize"
         )
     
-    # 5. 회원 탈퇴 처리
+    # 5. 토큰 버전 확인
+    token_version = payload.get("token_version")
+    if token_version != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 회원 탈퇴 처리
     if not user_crud.delete_member(db, member_id):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -210,4 +234,4 @@ def delete_user(db: Session, authorization: str) -> DeleteUserResponse:
         )
     
     # 6. 성공 응답 반환
-    return DeleteUserResponse(message="success")
+    # return DeleteUserResponse()
