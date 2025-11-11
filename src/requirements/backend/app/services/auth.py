@@ -2,7 +2,11 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Dict, Optional
 import re
-from app.schemas.auth import LoginRequest, LoginResponse, LogoutResponse
+from app.schemas.auth import (
+    LoginRequest, LoginResponse, 
+    LogoutResponse, SignupRequest, SignupResponse,
+    RefreshTokenResponse
+)
 from app.crud import auth as auth_crud
 from app.core.security import (
     hash_password, 
@@ -10,6 +14,7 @@ from app.core.security import (
     create_access_token, 
     create_refresh_token,
     verify_access_token,
+    verify_refresh_token,
     get_token_from_header
 )
 
@@ -23,14 +28,42 @@ def validate_email_format(email: str) -> bool:
 def validate_password_format(password: str) -> bool:
     """
     비밀번호 형식을 검증합니다.
-    조건: 영대문자, 영소문자, 숫자, 특수문자가 최소 1개 이상 포함
+    조건: 
+    - 길이: 10-20자
+    - 영대문자, 영소문자, 숫자, 특수문자가 최소 1개 이상 포함
     """
+    # 길이 검증
+    if len(password) < 10 or len(password) > 20:
+        return False
+    
+    # 문자 조합 검증
     has_upper = bool(re.search(r'[A-Z]', password))
     has_lower = bool(re.search(r'[a-z]', password))
     has_digit = bool(re.search(r'\d', password))
     has_special = bool(re.search(r'[^\w\s]', password))
     
     return has_upper and has_lower and has_digit and has_special
+
+
+def validate_name_format(name: str) -> bool:
+    """
+    이름 형식을 검증합니다.
+    조건: 1-50자, 공백 제외 최소 1자 이상
+    """
+    if not name or len(name.strip()) == 0:
+        return False
+    if len(name) > 50:
+        return False
+    return True
+
+
+def validate_phone_format(phone: str) -> bool:
+    """
+    전화번호 형식을 검증합니다.
+    조건: 숫자만 11자리
+    """
+    phone_digits = re.sub(r'[-\s]', '', phone)
+    return phone_digits.isdigit() and len(phone_digits) == 11
 
 
 def parse_user_agent(user_agent: str) -> tuple[Optional[str], Optional[str]]:
@@ -223,3 +256,144 @@ def logout_user(db: Session, authorization: str) -> LogoutResponse:
     
     # 8. 성공 응답 반환
     return LogoutResponse(message="success")
+
+
+def signup_user(db: Session, signup_data: SignupRequest) -> SignupResponse:
+    """
+    사용자 회원가입을 처리합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        signup_data: 회원가입 요청 데이터
+        
+    Returns:
+        SignupResponse: 회원가입 성공 응답
+        
+    Raises:
+        HTTPException: 유효성 검사 실패 또는 중복 가입 시
+    """
+    # 1. 이메일 형식 검증
+    if not validate_email_format(signup_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 2. 이메일 중복 확인
+    if auth_crud.check_email_exists(db, signup_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 3. 비밀번호 형식 검증
+    if not validate_password_format(signup_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 4. 이름 형식 검증
+    if not validate_name_format(signup_data.name):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 5. 전화번호 형식 검증
+    if not validate_phone_format(signup_data.phone):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 비밀번호 해싱
+    hashed_password = hash_password(signup_data.password)
+    
+    # 7. 전화번호 정규화 (하이픈 제거)
+    phone_normalized = re.sub(r'[-\s]', '', signup_data.phone)
+    
+    # 8. 회원 생성
+    try:
+        new_member = auth_crud.create_member(
+            db=db,
+            email=signup_data.email,
+            hashed_password=hashed_password,
+            name=signup_data.name,
+            phone=phone_normalized,
+            profile_image="default_profile.png"  # 기본 프로필 이미지
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server error"
+        )
+    
+    # 9. 성공 응답 반환
+    return SignupResponse(message="success")
+
+
+def refresh_access_token(db: Session, authorization: str) -> RefreshTokenResponse:
+    """
+    리프레시 토큰을 이용하여 새로운 액세스 토큰을 발급합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        authorization: Authorization 헤더 값 (Bearer {refresh_token})
+        
+    Returns:
+        RefreshTokenResponse: 새로 발급된 액세스 토큰
+        
+    Raises:
+        HTTPException: 인증 실패 또는 처리 실패 시
+    """
+    # 1. Authorization 헤더에서 리프레시 토큰 추출
+    refresh_token = get_token_from_header(authorization)
+    
+    # 2. 리프레시 토큰 검증 및 디코드
+    payload = verify_refresh_token(refresh_token)
+    
+    # 3. 토큰에서 회원 ID 추출
+    member_id_str = payload.get("sub")
+    if not member_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    try:
+        member_id = int(member_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 4. 리프레시 토큰으로 회원 조회
+    member = auth_crud.get_member_by_refresh_token(db, refresh_token)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 5. 회원 ID 일치 확인
+    if member.member_id != member_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 계정 상태 확인
+    if member.account_status != 'A':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 7. 새로운 액세스 토큰 생성
+    token_data = {"sub": str(member.member_id), "email": member.email}
+    new_access_token = create_access_token(token_data)
+    
+    # 8. 성공 응답 반환
+    return RefreshTokenResponse(accessToken=new_access_token)
