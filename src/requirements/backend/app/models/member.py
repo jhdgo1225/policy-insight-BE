@@ -12,6 +12,7 @@ class Member(Base):
     email = Column(String(100), unique=True, nullable=False, doc="회원의 이메일 주소")
     passwd = Column(String(64), nullable=True, doc="암호화된 패스워드")
     member_name = Column(String(50), nullable=False, doc="회원의 실명")
+    phone = Column(String(11), nullable=False, doc="회원 전화번호")
     profile_image = Column(String(500), nullable=False, doc="프로필 이미지 경로")
     join_date = Column(TIMESTAMP, nullable=False, server_default=func.now(), doc="회원 가입 일시")
     refresh_token = Column(Text, nullable=True, doc="리프레시 토큰 정보")
