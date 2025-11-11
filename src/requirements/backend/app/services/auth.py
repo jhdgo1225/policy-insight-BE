@@ -1,11 +1,14 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import re
+from datetime import datetime
 from app.schemas.auth import (
     LoginRequest, LoginResponse, 
     LogoutResponse, SignupRequest, SignupResponse,
-    RefreshTokenResponse
+    RefreshTokenResponse, ResetPasswordNoLoginRequest, 
+    ResetPasswordLoginRequest, PasswordChangeResponse,
+    PasswordHistoryItem
 )
 from app.crud import auth as auth_crud
 from app.core.security import (
@@ -397,3 +400,145 @@ def refresh_access_token(db: Session, authorization: str) -> RefreshTokenRespons
     
     # 8. 성공 응답 반환
     return RefreshTokenResponse(accessToken=new_access_token)
+
+
+def reset_password_nologin(db: Session, reset_data: ResetPasswordNoLoginRequest) -> PasswordChangeResponse:
+    """
+    비로그인 상태에서 비밀번호를 변경합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        reset_data: 비밀번호 변경 요청 데이터
+        
+    Returns:
+        PasswordChangeResponse: 비밀번호 변경 성공 응답
+        
+    Raises:
+        HTTPException: 유효성 검사 실패 또는 처리 실패 시
+    """
+    # 1. 이메일 형식 검증
+    if not validate_email_format(reset_data.id):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 2. 비밀번호 형식 검증
+    if not validate_password_format(reset_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 3. 이메일로 회원 조회
+    member = auth_crud.get_member_by_email(db, reset_data.id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 4. 계정 상태 확인
+    if member.account_status != 'A':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 5. 비밀번호 해싱
+    hashed_password = hash_password(reset_data.password)
+    
+    # 6. 비밀번호 업데이트
+    if not auth_crud.update_password(db, member.member_id, hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server error"
+        )
+    
+    # 7. 성공 응답 반환
+    return PasswordChangeResponse(message="success")
+
+
+def reset_password_login(
+    db: Session, 
+    reset_data: ResetPasswordLoginRequest,
+    authorization: str
+) -> List[PasswordHistoryItem]:
+    """
+    로그인 상태에서 비밀번호를 변경합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        reset_data: 비밀번호 변경 요청 데이터
+        authorization: Authorization 헤더 값 (Bearer {access_token})
+        
+    Returns:
+        List[PasswordHistoryItem]: 비밀번호 변경 이력 목록
+        
+    Raises:
+        HTTPException: 인증 실패 또는 처리 실패 시
+    """
+    # 1. Authorization 헤더에서 토큰 추출
+    token = get_token_from_header(authorization)
+    
+    # 2. 액세스 토큰 검증 및 디코드
+    payload = verify_access_token(token)
+    
+    # 3. 토큰에서 회원 ID 추출
+    member_id_str = payload.get("sub")
+    if not member_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    try:
+        member_id = int(member_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 4. 회원 존재 여부 확인
+    member = auth_crud.get_member_by_id(db, member_id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 5. 계정 상태 확인
+    if member.account_status != 'A':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 6. 비밀번호 형식 검증
+    if not validate_password_format(reset_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 7. 비밀번호 해싱
+    hashed_password = hash_password(reset_data.password)
+    
+    # 8. 비밀번호 업데이트
+    if not auth_crud.update_password(db, member.member_id, hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server error"
+        )
+    
+    # 9. 비밀번호 변경 이력 반환 (현재 변경 내역)
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    history = [
+        PasswordHistoryItem(
+            title="비밀번호 변경",
+            date=current_time
+        )
+    ]
+    
+    return history
