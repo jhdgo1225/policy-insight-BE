@@ -17,7 +17,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """액세스 토큰을 생성합니다."""
+    """
+    액세스 토큰을 생성합니다.
+    
+    Args:
+        data: 토큰에 포함할 데이터 (member_id, token_version 필수)
+        expires_delta: 만료 시간 (옵션)
+    
+    Returns:
+        생성된 JWT 액세스 토큰
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -115,7 +124,7 @@ def verify_access_token(token: str) -> Dict:
         token: JWT 액세스 토큰
         
     Returns:
-        디코드된 토큰 페이로드
+        디코드된 토큰 페이로드 (member_id, token_version 포함)
         
     Raises:
         HTTPException: 토큰이 유효하지 않을 경우
@@ -129,6 +138,13 @@ def verify_access_token(token: str) -> Dict:
         )
     
     if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # token_version이 포함되어 있는지 확인
+    if "token_version" not in payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorize"
