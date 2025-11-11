@@ -8,7 +8,6 @@ from .db.base import get_db, Base, engine
 # Create database tables
 Base.metadata.create_all(bind=engine)
 from .routers import health
-from .routers import tasks
 
 app = FastAPI(
     title="Policy Insight API",
@@ -27,13 +26,3 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router)
-app.include_router(tasks.router)
-
-@app.get("/")
-async def root():
-    return {
-        "message": "Policy Insight API 서버가 실행 중입니다.",
-        "docs_url": "/docs",
-        "tasks_api": "/tasks"
-    }
-
