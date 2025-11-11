@@ -7,7 +7,8 @@ from app.schemas.auth import (
     LogoutResponse, SignupRequest, SignupResponse,
     RefreshTokenResponse, ResetPasswordNoLoginRequest,
     ResetPasswordLoginRequest, PasswordChangeResponse,
-    PasswordHistoryItem, ErrorResponse
+    PasswordHistoryItem, FindIdRequest, FindIdResponse,
+    ErrorResponse
 )
 from app.services import auth as auth_service
 
@@ -226,9 +227,38 @@ async def reset_password_login(
 			detail="Server error"
 		)
 
-@router.post('/id')
-async def find_id(db: Session = Depends(get_db)):
-	pass
+@router.post(
+	'/id',
+	response_model=FindIdResponse,
+	status_code=status.HTTP_200_OK,
+	responses={
+		401: {"model": ErrorResponse, "description": "Unauthorized"},
+		500: {"model": ErrorResponse, "description": "Internal server error"}
+	}
+)
+async def find_id(
+	find_data: FindIdRequest,
+	db: Session = Depends(get_db)
+):
+	"""
+	아이디 찾기 API
+	
+	이메일을 통해 아이디(이메일)를 조회합니다.
+	
+	- **email**: 회원의 이메일 주소
+	
+	Returns:
+		FindIdResponse: 찾은 아이디(이메일)
+	"""
+	try:
+		return auth_service.find_user_id(db, find_data)
+	except HTTPException:
+		raise
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
 
 @router.get('/me')
 async def read_user_info(db: Session = Depends(get_db)):
