@@ -1,8 +1,11 @@
 fastapi
 pydantic
 pydantic[email]
+pydantic-settings
 uvicorn
 sqlalchemy
 python-dotenv
 psycopg2-binary
 sqlalchemy-utils
+python-jose[cryptography]
+email-validator
