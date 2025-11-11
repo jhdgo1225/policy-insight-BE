@@ -48,6 +48,36 @@ def decode_token(token: str) -> Optional[Dict]:
         return None
 
 
+def verify_refresh_token(token: str) -> Dict:
+    """
+    리프레시 토큰을 검증하고 디코드합니다.
+    
+    Args:
+        token: JWT 리프레시 토큰
+        
+    Returns:
+        디코드된 토큰 페이로드
+        
+    Raises:
+        HTTPException: 토큰이 유효하지 않을 경우
+    """
+    payload = decode_token(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    return payload
+
+
 def get_token_from_header(authorization: str) -> str:
     """
     Authorization 헤더에서 토큰을 추출합니다.
