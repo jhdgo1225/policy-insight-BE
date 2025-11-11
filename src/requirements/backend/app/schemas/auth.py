@@ -60,6 +60,28 @@ class RefreshTokenResponse(BaseModel):
     accessToken: str = Field(..., description="새로 발급된 액세스 토큰")
 
 
+class ResetPasswordNoLoginRequest(BaseModel):
+    """비로그인 상태 비밀번호 변경 요청 스키마"""
+    id: EmailStr = Field(..., description="회원의 이메일 주소 (ID)")
+    password: str = Field(..., min_length=10, max_length=20, description="새 비밀번호 (10-20자, 영대문자/영소문자/숫자/특수문자 각 1개 이상)")
+
+
+class ResetPasswordLoginRequest(BaseModel):
+    """로그인 상태 비밀번호 변경 요청 스키마"""
+    password: str = Field(..., min_length=10, max_length=20, description="새 비밀번호 (10-20자, 영대문자/영소문자/숫자/특수문자 각 1개 이상)")
+
+
+class PasswordChangeResponse(BaseModel):
+    """비밀번호 변경 응답 스키마"""
+    message: str = Field(..., description="성공 메시지")
+
+
+class PasswordHistoryItem(BaseModel):
+    """비밀번호 변경 이력 항목 스키마"""
+    title: str = Field(..., description="변경 제목")
+    date: str = Field(..., description="변경 일시")
+
+
 class ErrorResponse(BaseModel):
     """에러 응답 스키마"""
     error: str = Field(..., description="에러 메시지")
