@@ -64,6 +64,26 @@ def create_member(
     return new_member
 
 
+def update_password(db: Session, member_id: int, hashed_password: str) -> bool:
+    """
+    회원의 비밀번호를 업데이트합니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        member_id: 회원 ID
+        hashed_password: 새로운 해시된 비밀번호
+        
+    Returns:
+        성공 여부
+    """
+    member = db.query(Member).filter(Member.member_id == member_id).first()
+    if member:
+        member.passwd = hashed_password
+        db.commit()
+        return True
+    return False
+
+
 def update_refresh_token(db: Session, member_id: int, refresh_token: str) -> Member:
     """리프레시 토큰을 업데이트합니다."""
     member = db.query(Member).filter(Member.member_id == member_id).first()
