@@ -82,6 +82,16 @@ class PasswordHistoryItem(BaseModel):
     date: str = Field(..., description="변경 일시")
 
 
+class FindIdRequest(BaseModel):
+    """아이디 찾기 요청 스키마"""
+    email: EmailStr = Field(..., description="회원의 이메일 주소")
+
+
+class FindIdResponse(BaseModel):
+    """아이디 찾기 응답 스키마"""
+    id: str = Field(..., description="회원의 이메일 주소 (ID)")
+
+
 class ErrorResponse(BaseModel):
     """에러 응답 스키마"""
     error: str = Field(..., description="에러 메시지")
