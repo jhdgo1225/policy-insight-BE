@@ -8,7 +8,7 @@ from app.schemas.auth import (
     LogoutResponse, SignupRequest, SignupResponse,
     RefreshTokenResponse, ResetPasswordNoLoginRequest, 
     ResetPasswordLoginRequest, PasswordChangeResponse,
-    PasswordHistoryItem
+    PasswordHistoryItem, FindIdRequest, FindIdResponse
 )
 from app.crud import auth as auth_crud
 from app.core.security import (
@@ -542,3 +542,43 @@ def reset_password_login(
     ]
     
     return history
+
+
+def find_user_id(db: Session, find_data: FindIdRequest) -> FindIdResponse:
+    """
+    이메일로 아이디(이메일)를 찾습니다.
+    
+    Args:
+        db: 데이터베이스 세션
+        find_data: 아이디 찾기 요청 데이터
+        
+    Returns:
+        FindIdResponse: 찾은 아이디(이메일)
+        
+    Raises:
+        HTTPException: 유효성 검사 실패 또는 조회 실패 시
+    """
+    # 1. 이메일 형식 검증
+    if not validate_email_format(find_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 2. 이메일로 회원 조회
+    member = auth_crud.get_member_by_email(db, find_data.email)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 3. 계정 상태 확인
+    if member.account_status != 'A':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorize"
+        )
+    
+    # 4. 아이디(이메일) 반환
+    return FindIdResponse(id=member.email)
