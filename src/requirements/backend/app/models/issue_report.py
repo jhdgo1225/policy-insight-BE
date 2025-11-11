@@ -1,7 +1,7 @@
 from sqlalchemy import Column, BigInteger, ForeignKey
 from sqlalchemy.sql import func
 
-from app.db.base import Base
+from app.core.db import Base
 
 
 class IssueReport(Base):

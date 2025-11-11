@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from .db.base import get_db, Base, engine
+from .core.db import get_db, Base, engine
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

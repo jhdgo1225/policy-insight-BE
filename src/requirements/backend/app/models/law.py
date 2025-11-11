@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Text, Date
 from sqlalchemy.orm import relationship
 
-from app.db.base import Base
+from app.core.db import Base
 
 
 class Law(Base):

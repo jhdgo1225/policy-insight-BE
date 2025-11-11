@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, BigInteger, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.orm import relationship
 
-from app.db.base import Base
+from app.core.db import Base
 
 
 class IssueLegislationAnalysis(Base):

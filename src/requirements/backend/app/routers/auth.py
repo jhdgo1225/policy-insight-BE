@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from sqlalchemy.orm import Session
 from typing import List
-from app.db.base import get_db
+from app.core.db import get_db
 from app.schemas.auth import (
     LoginRequest, LoginResponse, 
     LogoutResponse, SignupRequest, SignupResponse,

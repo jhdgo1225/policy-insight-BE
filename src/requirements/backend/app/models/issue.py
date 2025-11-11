@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Text, TIMESTAMP, Integer, Float, BigInteg
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
-from app.db.base import Base
+from app.core.db import Base
 
 
 class Issue(Base):
