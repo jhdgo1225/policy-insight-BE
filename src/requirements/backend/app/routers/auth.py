@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from sqlalchemy.orm import Session
 from app.db.base import get_db
-from app.schemas.auth import LoginRequest, LoginResponse, LogoutResponse, ErrorResponse
+from app.schemas.auth import (
+    LoginRequest, LoginResponse, 
+    LogoutResponse, SignupRequest, SignupResponse,
+    RefreshTokenResponse, ErrorResponse
+)
 from app.services import auth as auth_service
 
 
@@ -27,7 +31,7 @@ async def login(
 	이메일과 비밀번호를 통해 로그인을 수행하고, JWT 토큰을 발급합니다.
 	
 	- **email**: 회원의 이메일 주소 (이메일 형식)
-	- **password**: 비밀번호 (영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
+	- **password**: 비밀번호 (10-20자, 영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
 	
 	Returns:
 		LoginResponse: 회원 정보 및 JWT 토큰
@@ -81,13 +85,74 @@ async def logout(
 			detail="Server error"
 		)
 
-@router.post('/signup')
-async def signup(db: Session = Depends(get_db)):
-	pass
+@router.post(
+	'/signup',
+	response_model=SignupResponse,
+	status_code=status.HTTP_201_CREATED,
+	responses={
+		401: {"model": ErrorResponse, "description": "Unauthorized"},
+		500: {"model": ErrorResponse, "description": "Internal server error"}
+	}
+)
+async def signup(
+	signup_data: SignupRequest,
+	db: Session = Depends(get_db)
+):
+	"""
+	회원가입 API
+	
+	이메일, 비밀번호, 이름, 전화번호를 통해 회원가입을 수행합니다.
+	
+	- **email**: 회원의 이메일 주소 (이메일 형식, 중복 불가)
+	- **password**: 비밀번호 (10-20자, 영대문자, 영소문자, 숫자, 특수문자 최소 1개 이상 포함)
+	- **name**: 회원의 실명 (1-50자)
+	- **phone**: 전화번호 (숫자 11자리)
+	
+	Returns:
+		SignupResponse: 회원가입 성공 메시지
+	"""
+	try:
+		return auth_service.signup_user(db, signup_data)
+	except HTTPException:
+		raise
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
 
-@router.post('/refresh')
-async def create_refresh(db: Session = Depends(get_db)):
-	pass
+@router.post(
+	'/refresh',
+	response_model=RefreshTokenResponse,
+	status_code=status.HTTP_201_CREATED,
+	responses={
+		401: {"model": ErrorResponse, "description": "Unauthorized"},
+		500: {"model": ErrorResponse, "description": "Internal server error"}
+	}
+)
+async def create_refresh(
+	authorization: str = Header(..., description="Bearer {refresh_token}"),
+	db: Session = Depends(get_db)
+):
+	"""
+	리프레시 토큰을 통한 액세스 토큰 재발급 API
+	
+	리프레시 토큰을 검증하고 새로운 액세스 토큰을 발급합니다.
+	
+	- **Authorization Header**: Bearer {refresh_token} 형식
+	
+	Returns:
+		RefreshTokenResponse: 새로 발급된 액세스 토큰
+	"""
+	try:
+		return auth_service.refresh_access_token(db, authorization)
+	except HTTPException:
+		raise
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
 
 @router.put('/password/nologin')
 async def reset_password_nologin(db: Session = Depends(get_db)):
