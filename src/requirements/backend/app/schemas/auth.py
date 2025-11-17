@@ -100,3 +100,8 @@ class FindIdResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """에러 응답 스키마"""
     error: str = Field(..., description="에러 메시지")
+
+
+class CsrfTokenResponse(BaseModel):
+    """CSRF 토큰 응답 스키마"""
+    csrfToken: str = Field(..., description="CSRF 토큰")

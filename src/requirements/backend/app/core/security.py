@@ -1,4 +1,5 @@
 import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from jose import jwt, JWTError
@@ -14,6 +15,11 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """평문 비밀번호와 해시된 비밀번호를 비교합니다."""
     return hash_password(plain_password) == hashed_password
+
+
+def generate_csrf_token() -> str:
+    """CSRF 토큰을 생성합니다."""
+    return secrets.token_urlsafe(32)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -8,13 +8,41 @@ from app.schemas.auth import (
     RefreshTokenRequest, RefreshTokenResponse, ResetPasswordNoLoginRequest,
     ResetPasswordLoginRequest, PasswordChangeResponse,
     PasswordHistoryItem, FindIdRequest, FindIdResponse,
-    ErrorResponse
+    ErrorResponse, CsrfTokenResponse
 )
 from app.services import auth as auth_service
 from app.core.dependencies import get_token_from_credentials
+from app.core.security import generate_csrf_token
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+@router.get(
+	'/csrf-token',
+	response_model=CsrfTokenResponse,
+	status_code=status.HTTP_200_OK,
+	responses={
+		500: {"model": ErrorResponse, "description": "Server error"}
+	}
+)
+async def get_csrf_token():
+	"""
+	CSRF 토큰 발급 API
+	
+	클라이언트가 폼 제출 등의 요청을 보내기 전에 CSRF 토큰을 발급받습니다.
+	발급받은 토큰은 요청 헤더에 포함하여 전송해야 합니다.
+	
+	Returns:
+		CsrfTokenResponse: CSRF 토큰
+	"""
+	try:
+		csrf_token = generate_csrf_token()
+		return CsrfTokenResponse(csrfToken=csrf_token)
+	except Exception as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Server error"
+		)
 
 @router.post(
 	'/login',
@@ -95,6 +123,7 @@ async def logout(
 	response_model=SignupResponse,
 	status_code=status.HTTP_201_CREATED,
 	responses={
+		400: {"model": ErrorResponse, "description": "Email already exists"},
 		401: {"model": ErrorResponse, "description": "Unauthorized"},
 		500: {"model": ErrorResponse, "description": "Internal server error"}
 	}
