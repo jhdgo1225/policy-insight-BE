@@ -297,8 +297,8 @@ def signup_user(db: Session, signup_data: SignupRequest) -> SignupResponse:
     # 2. 이메일 중복 확인
     if auth_crud.check_email_exists(db, signup_data.email):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorize"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists"
         )
     
     # 3. 비밀번호 형식 검증
@@ -335,8 +335,8 @@ def signup_user(db: Session, signup_data: SignupRequest) -> SignupResponse:
             email=signup_data.email,
             hashed_password=hashed_password,
             name=signup_data.name,
-            phone=phone_normalized,
-            profile_image="default_profile.png"  # 기본 프로필 이미지
+            phone=phone_normalized
+            # profile_image는 CRUD에서 자동으로 /static/profiles/{member_id}/profile.png로 설정됨
         )
     except Exception as e:
         raise HTTPException(

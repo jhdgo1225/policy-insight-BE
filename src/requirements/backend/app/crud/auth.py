@@ -34,7 +34,7 @@ def create_member(
     hashed_password: str,
     name: str,
     phone: str,
-    profile_image: str = "default_profile.png"
+    profile_image: str = "/static/profiles/default/profile.png"
 ) -> Member:
     """
     새로운 회원을 생성합니다.
@@ -45,7 +45,7 @@ def create_member(
         hashed_password: 해시된 비밀번호
         name: 회원 이름
         phone: 전화번호
-        profile_image: 프로필 이미지 경로 (기본값: default_profile.png)
+        profile_image: 프로필 이미지 경로 (기본값: /static/profiles/default/profile.png)
         
     Returns:
         생성된 회원 객체
@@ -61,6 +61,12 @@ def create_member(
     db.add(new_member)
     db.commit()
     db.refresh(new_member)
+    
+    # 회원 ID를 사용하여 프로필 이미지 경로 업데이트
+    new_member.profile_image = f"/static/profiles/{new_member.member_id}/profile.png"
+    db.commit()
+    db.refresh(new_member)
+    
     return new_member
 
 
